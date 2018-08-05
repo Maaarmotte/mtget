@@ -1,4 +1,4 @@
-package main
+package mtgetlib
 
 // HTTP
 // Status

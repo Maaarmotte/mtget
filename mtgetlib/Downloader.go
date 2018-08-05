@@ -1,4 +1,4 @@
-package main
+package mtgetlib
 
 import (
 	"net/http"
@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-type Downloader struct {
+type downloader struct {
 	url       string
 	threads   int
 	size      int64
@@ -20,11 +20,11 @@ type Downloader struct {
 	fileName  string
 	waitGroup *sync.WaitGroup
 	failure   bool
-	merger    *Merger
+	merger    *merger
 }
 
-func NewDownloader(url string, threads int) *Downloader {
-	dl := new(Downloader)
+func NewDownloader(url string, threads int) *downloader {
+	dl := new(downloader)
 	dl.url = url
 	dl.threads = threads
 	dl.filePath, _ = os.Getwd()
@@ -34,7 +34,7 @@ func NewDownloader(url string, threads int) *Downloader {
 	return dl
 }
 
-func (dl *Downloader) Run() bool {
+func (dl *downloader) Run() bool {
 	resp, err := http.Head(dl.url)
 	if err != nil {
 		fmt.Println("Could not fetch file information")
@@ -58,7 +58,7 @@ func (dl *Downloader) Run() bool {
 	}
 
 	dl.extractFileName()
-	dl.merger = NewMerger(fmt.Sprintf("%s%c%s", dl.filePath, filepath.Separator, dl.fileName), dl.size)
+	dl.merger = newMerger(fmt.Sprintf("%s%c%s", dl.filePath, filepath.Separator, dl.fileName), dl.size)
 	if !dl.merger.Open() {
 		fmt.Println("Could not create output file")
 	}
@@ -88,7 +88,7 @@ func (dl *Downloader) Run() bool {
 	return !dl.failure
 }
 
-func (dl *Downloader) extractFileName() {
+func (dl *downloader) extractFileName() {
 	tokens := strings.Split(dl.url, "/")
 	last := tokens[len(tokens) - 1]
 	if last != "" {
@@ -96,7 +96,7 @@ func (dl *Downloader) extractFileName() {
 	}
 }
 
-func (dl *Downloader) downloadPart(thread int, start int64, end int64) {
+func (dl *downloader) downloadPart(thread int, start int64, end int64) {
 	defer dl.waitGroup.Done()
 	defer dl.safeStop(thread)
 
@@ -144,12 +144,12 @@ func (dl *Downloader) downloadPart(thread int, start int64, end int64) {
 	}
 }
 
-func (dl *Downloader) fail(err error) {
+func (dl *downloader) fail(err error) {
 	dl.failure = true
 	panic(err)
 }
 
-func (dl *Downloader) safeStop(thread int) {
+func (dl *downloader) safeStop(thread int) {
 	r := recover()
 	if r != nil {
 		fmt.Printf("%d] Download aborted\n", thread)
