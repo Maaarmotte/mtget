@@ -1,10 +1,10 @@
 package main
 
 import (
-	"os"
-	"strings"
 	"fmt"
 	"mtget/mtgetlib"
+	"os"
+	"strings"
 )
 
 func main() {
@@ -15,7 +15,7 @@ func main() {
 		return
 	}
 
-	dl := mtgetlib.NewDownloader(strings.Join(args, " "), 4)
+	dl := mtgetlib.NewDownloader(strings.Join(args, " "), 16)
 	if !dl.Run() {
 		fmt.Println("Download failed !")
 	}

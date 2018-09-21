@@ -12,6 +12,8 @@ import (
 	"strings"
 )
 
+const bufferSize = 65536
+
 type downloader struct {
 	url       string
 	threads   int
@@ -41,7 +43,7 @@ func (dl *downloader) Run() bool {
 		return false
 	}
 
-	if resp.StatusCode != statusOk {
+	if resp.StatusCode != http.StatusOK {
 		fmt.Println("HTTP Status was", resp.Status)
 		return false
 	}
@@ -62,6 +64,8 @@ func (dl *downloader) Run() bool {
 	if !dl.merger.Open() {
 		fmt.Println("Could not create output file")
 	}
+
+	dl.merger.Preallocate()
 
 	fmt.Printf("Starting %d threads\n", dl.threads)
 
@@ -110,7 +114,7 @@ func (dl *downloader) downloadPart(thread int, start int64, end int64) {
 		dl.fail(err)
 	}
 
-	if resp.StatusCode != statusPartialContent {
+	if resp.StatusCode != http.StatusPartialContent {
 		fmt.Printf("%d] HTTP Status was %s\n", thread, resp.Status)
 		dl.failure = true
 		return
@@ -125,7 +129,7 @@ func (dl *downloader) downloadPart(thread int, start int64, end int64) {
 			return
 		}
 
-		buffer := make([]byte, 16384)
+		buffer := make([]byte, bufferSize)
 		count, err := reader.Read(buffer)
 
 		if count > 0 {

@@ -2,9 +2,15 @@ package mtgetlib
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"sync"
 	"time"
+)
+
+const (
+	preallocationBufferSize = 10485760
+	maxWaitingChunks = 512
 )
 
 type merger struct {
@@ -28,7 +34,7 @@ func newMerger(filePath string, totalSize int64) *merger {
 	m := new(merger)
 	m.filePath = filePath
 	m.totalSize = totalSize
-	m.channel = make(chan *chunk, 128)
+	m.channel = make(chan *chunk, maxWaitingChunks)
 	m.waitGroup = new(sync.WaitGroup)
 	return m
 }
@@ -43,6 +49,28 @@ func (m *merger) Open() bool {
 	m.waitGroup.Add(1)
 
 	return true
+}
+
+// Preallocate space to avoid unwanted freeze
+func (m *merger) Preallocate() {
+	arr := make([]byte, preallocationBufferSize)
+	pos := int64(0)
+
+	for {
+		if pos + preallocationBufferSize > m.totalSize {
+			m.file.WriteAt(arr[0:m.totalSize - pos], pos)
+		} else {
+			m.file.WriteAt(arr, pos)
+		}
+		pos += preallocationBufferSize
+
+		fmt.Printf("\rPreallocating... %.2f%%", 100.0*math.Min(float64(pos), float64(m.totalSize))/float64(m.totalSize))
+
+		if pos >= m.totalSize {
+			fmt.Println()
+			break
+		}
+	}
 }
 
 func (m *merger) WriteAt(data []byte, offset int64) {
@@ -87,9 +115,9 @@ func (m *merger) computeSpeed() {
 }
 
 func (m *merger) logProgress() {
-	fmt.Printf("\r%.2f%% (%.3f MiB) @ %.3f MiB/s, %.2f%% buffer usage",
+	fmt.Printf("\r%.2f%% (%.3f MiB) @ %.3f MiB/s, %.2f%% buffer usage     ",
 		100.0*float64(m.read)/float64(m.totalSize),
 		float64(m.read)/toMiB,
 		float64(m.speed)/toMiB,
-		float32(len(m.channel))/128.0)
+		float32(100.0*len(m.channel))/maxWaitingChunks)
 }
