@@ -1,4 +1,4 @@
-package mtgetlib
+package mtget
 
 import (
 	"net/http"

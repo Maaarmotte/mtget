@@ -1,21 +1,25 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"mtget/mtgetlib"
-	"os"
+	"mtget/mtget"
 	"strings"
 )
 
 func main() {
-	args := os.Args[1:]
+	threadPtr := flag.Int("t", 4, "Number of threads")
+
+	flag.Parse()
+
+	args := flag.Args()
 
 	if args == nil || len(args) == 0 {
 		fmt.Println("Missing URL parameter")
 		return
 	}
 
-	dl := mtgetlib.NewDownloader(strings.Join(args, " "), 16)
+	dl := mtget.NewDownloader(strings.Join(args, " "), *threadPtr)
 	if !dl.Run() {
 		fmt.Println("Download failed !")
 	}

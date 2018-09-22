@@ -1,4 +1,4 @@
-package mtgetlib
+package mtget
 
 const (
 	// Headers
